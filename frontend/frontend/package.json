@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "safewalk-web": "file:.."
+  },
+  "devDependencies": {
+    "vite": "^7.2.4"
+  }
+}
