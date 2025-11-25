@@ -50,6 +50,7 @@ export default function Home() {
   const [alpha, setAlpha] = useState(0.7);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [routeOptions, setRouteOptions] = useState(null);
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const suggestionsRef = useRef(null);
@@ -134,21 +135,165 @@ export default function Home() {
         alpha: alpha
       });
 
-      // Navigate to route viewer with route data
-      navigate('/route', { 
-        state: { 
-          route: response.data.route, 
-          origin: currentLocation, 
-          destination: destinationCoords 
-        } 
-      });
+      // Check if we have multiple routes (new format) or single route (old format)
+      if (response.data.routes) {
+        // New format: Show route selection screen
+        setRouteOptions({
+          routes: response.data.routes,
+          summary: response.data.summary,
+          origin: currentLocation,
+          destination: destinationCoords
+        });
+      } else {
+        // Old format: Navigate directly to route viewer
+        navigate('/route', { 
+          state: { 
+            route: response.data.route, 
+            origin: currentLocation, 
+            destination: destinationCoords 
+          } 
+        });
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to find route');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to find route');
       console.error('Route error:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleRouteSelect = (routeKey, route) => {
+    navigate('/route', {
+      state: {
+        route: route,
+        routeType: route.type,
+        origin: routeOptions.origin,
+        destination: routeOptions.destination,
+        allRoutes: routeOptions.routes // Keep all routes for comparison
+      }
+    });
+  };
+
+  // Show route selection screen if routes are available
+  if (routeOptions) {
+    const { routes, summary } = routeOptions;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Choose Your Route</h1>
+          <p className="text-gray-600 mb-6">We've found 3 route options for you. Select the one that best fits your needs.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {/* Route A: Shortest */}
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-200 hover:border-blue-400 transition">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-blue-600">Route A</h2>
+                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Shortest</span>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Distance:</span>
+                  <span className="font-semibold">{routes.routeA.distanceKm} km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Safety Score:</span>
+                  <span className="font-semibold text-orange-600">{routes.routeA.safetyScore}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Est. Time:</span>
+                  <span className="font-semibold">{routes.routeA.eta} min</span>
+                </div>
+                {routes.routeA.unsafeSegments && routes.routeA.unsafeSegments.length > 0 && (
+                  <div className="text-xs text-red-600">
+                    ⚠️ {routes.routeA.unsafeSegments.length} unsafe segment(s)
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => handleRouteSelect('routeA', routes.routeA)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                Select This Route
+              </button>
+            </div>
+
+            {/* Route B: Safest */}
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-green-200 hover:border-green-400 transition">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-green-600">Route B</h2>
+                <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Safest</span>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Distance:</span>
+                  <span className="font-semibold">{routes.routeB.distanceKm} km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Safety Score:</span>
+                  <span className="font-semibold text-green-600">{routes.routeB.safetyScore}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Est. Time:</span>
+                  <span className="font-semibold">{routes.routeB.eta} min</span>
+                </div>
+                {routes.routeB.unsafeSegments && routes.routeB.unsafeSegments.length > 0 && (
+                  <div className="text-xs text-red-600">
+                    ⚠️ {routes.routeB.unsafeSegments.length} unsafe segment(s)
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => handleRouteSelect('routeB', routes.routeB)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                Select This Route
+              </button>
+            </div>
+
+            {/* Route C: Balanced */}
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-purple-200 hover:border-purple-400 transition">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-purple-600">Route C</h2>
+                <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded">Balanced</span>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Distance:</span>
+                  <span className="font-semibold">{routes.routeC.distanceKm} km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Safety Score:</span>
+                  <span className="font-semibold text-purple-600">{routes.routeC.safetyScore}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Est. Time:</span>
+                  <span className="font-semibold">{routes.routeC.eta} min</span>
+                </div>
+                {routes.routeC.unsafeSegments && routes.routeC.unsafeSegments.length > 0 && (
+                  <div className="text-xs text-red-600">
+                    ⚠️ {routes.routeC.unsafeSegments.length} unsafe segment(s)
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => handleRouteSelect('routeC', routes.routeC)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                Select This Route
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setRouteOptions(null)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md"
+          >
+            ← Find Different Route
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -39,6 +39,8 @@ Thumbs.db
 .firebase/
 firebase-debug.log
 firestore-debug.log
+*-firebase-adminsdk-*.json
+.firebase-key-temp.txt
 
 # Python (if keeping old backend)
 __pycache__/
